@@ -1,5 +1,5 @@
 import streamlit as st
-from main import init, cleanup, zoom_video, flip_video, cleanup_input
+from main import init, cleanup, zoom_video, flip_video, cleanup_input, copy_video, filter_video
 import os
 import subprocess
 from streamlit_extras.switch_page_button import switch_page
@@ -15,15 +15,23 @@ if "is_processed" not in st.session_state:
 
 
 if 'fname' and 'input_folder' in st.session_state:
+    keywords = st.text_input("Enter Keywords (Seperated by ','): ")
+    if keywords:
+        keywords = keywords.split(",")
+    
     zoom = st.toggle("Zoom Video")
     if zoom:
         factor_percent = st.slider("Zoom Factor", 100, 200)
     flip = st.toggle("Flip Video")
+    color_filter = st.toggle("Color Filter")
+    if color_filter:
+        filter = st.radio("Select Filter", ["Sepia","Black-White","Invert"])
 
     submit = st.button("Submit")
 
+
     if submit:
-        if zoom or flip:
+        if zoom or flip or color_filter:
             st.session_state.is_processed = True
             with st.status("Processing Video"):
                 video_path = os.path.join(st.session_state.input_folder, st.session_state.fname)
@@ -31,18 +39,26 @@ if 'fname' and 'input_folder' in st.session_state:
                 cleanup()
                 if zoom:
                     st.write("Zooming on videos...")
-                    zoom_video(video_path, factor_percent)
+                    zoom_video(video_path, factor_percent, keywords)
                 if flip:
                     st.write("Flipping videos...")
                     if zoom:
                         video_name =os.listdir(st.session_state.output_folder)[0]
                         video_path = os.path.join(st.session_state.output_folder, video_name)
-                        flip_video(video_path)
-                        os.remove(video_name)
+                        flip_video(video_path, keywords)
+                        os.remove(video_path)
                     else:
-                        flip_video(video_path)
+                        flip_video(video_path, keywords)
+                if color_filter:
+                    st.write("Applying Filter...")
+                    if zoom or flip:
+                        video_name =os.listdir(st.session_state.output_folder)[0]
+                        video_path = os.path.join(st.session_state.output_folder, video_name)
+                        filter_video(video_path, filter, keywords)
+                        os.remove(video_path)
+                    else:
+                        filter_video(video_path, filter, keywords)
                 st.write("Finalizing..")
-                # cleanup_input()
         else:
             st.error("Please Select atleast one Processing")
     

@@ -1,6 +1,7 @@
 import ffmpeg
 import os
 import random
+import subprocess
 # from tqdm import tqdm
 
 # Créez un dossier "input" et mettez-y vos vidéos
@@ -42,7 +43,7 @@ def get_metadata_dict(video_keywords_str):
     return metadata_dict
 
 
-def get_unique_name_and_metadata(str_effect=""):
+def get_unique_name_and_metadata(KEYWORDS, str_effect=""):
     """Generate a unique name for the video
 
     Args:
@@ -80,7 +81,7 @@ def get_video_dimensions(path):
     return width, height
 
 
-def zoom_video(path, factor_percent=110):
+def zoom_video(path, factor_percent, video_keywords):
     """Zoom in the video by a factor of factor_percent
 
     Args:
@@ -92,7 +93,10 @@ def zoom_video(path, factor_percent=110):
     """
 
     factor_str = str(factor_percent)
-    video_name, metadata = get_unique_name_and_metadata(f"z_{factor_str}")
+    if video_keywords:
+        video_name, metadata = get_unique_name_and_metadata(video_keywords, f"z_{factor_str}")    
+    else:
+        video_name, metadata = get_unique_name_and_metadata(KEYWORDS, f"z_{factor_str}")
     res_file_name = os.path.join(OUTPUT, video_name)
     try:
         width, height = get_video_dimensions(path)
@@ -114,8 +118,42 @@ def zoom_video(path, factor_percent=110):
         print(e.stderr)
         return False
 
+def filter_video(input_video, mode, video_keywords):
+    
+    if video_keywords:
+        video_name, metadata = get_unique_name_and_metadata(video_keywords, f"f_{mode}")    
+    else:
+        video_name, metadata = get_unique_name_and_metadata(KEYWORDS, f"f_{mode}")
+    res_file_name = os.path.join(OUTPUT, video_name)
+    intensity = 40
+    if mode == "Sepia":
+        # sepia
+        command = [
+            'ffmpeg',
+            '-i', input_video,  # Input video file
+            '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131',  # Sepia filter
+            res_file_name  # Output video file
+        ]
+    elif mode == "Black-White":
+        # b/w
+        command = [
+            'ffmpeg',
+            '-i', input_video,
+            '-vf', 'hue=s=0',  # Desaturates the color to make it black and white
+            res_file_name
+        ]
+    elif mode == "Invert":
+        # invert
+        command = [
+            'ffmpeg',
+            '-i', input_video,
+            '-vf', 'negate',  # Inverts the colors
+            res_file_name
+        ]
+    subprocess.run(command, check=True)
 
-def flip_video(path):
+
+def flip_video(path, video_keywords):
     print(f"Flipping {path}")
     """Flip the video horizontally
 
@@ -129,7 +167,11 @@ def flip_video(path):
     # Flip is done after zooming, so we take the original video name and append the effect
     processed_video_name = os.path.basename(path)
     processed_video_effect = processed_video_name.split("_")[-1].split(".")[0]
-    video_name, metadata = get_unique_name_and_metadata(f"{processed_video_effect}_f")
+    if video_keywords:
+        video_name, metadata = get_unique_name_and_metadata(KEYWORDS, f"{processed_video_effect}_f")   
+    else:
+        video_name, metadata = get_unique_name_and_metadata(video_keywords, f"{processed_video_effect}_f")
+    
     res_file_name = os.path.join(OUTPUT, video_name)
     try:
         (
@@ -161,7 +203,7 @@ def copy_video(path):
         bool: True if the video was successfully processed, False otherwise
     """
 
-    video_name, metadata = get_unique_name_and_metadata("o")
+    video_name, metadata = get_unique_name_and_metadata(KEYWORDS, "o")
     res_file_name = os.path.join(OUTPUT, video_name)
     try:
         (
@@ -221,6 +263,9 @@ def main():
         flip_video(video_path)
 
     cleanup_input()
+
+# h = input('Enter hex: ').lstrip('#')
+# print('RGB =', tuple(int(h[i:i+2], 16) for i in (0, 2, 4)))
 
 
 if __name__ == "__main__":
