@@ -26,6 +26,8 @@ if 'fname' and 'input_folder' in st.session_state:
     color_filter = st.toggle("Color Filter")
     if color_filter:
         filter = st.radio("Select Filter", ["Sepia","Black-White","Invert"])
+        if filter:
+            intensity = st.slider("% Opacity",1,100)
 
     submit = st.button("Submit")
 
@@ -54,10 +56,10 @@ if 'fname' and 'input_folder' in st.session_state:
                     if zoom or flip:
                         video_name =os.listdir(st.session_state.output_folder)[0]
                         video_path = os.path.join(st.session_state.output_folder, video_name)
-                        filter_video(video_path, filter, keywords)
+                        filter_video(video_path, filter, keywords, intensity)
                         os.remove(video_path)
                     else:
-                        filter_video(video_path, filter, keywords)
+                        filter_video(video_path, filter, keywords, intensity)
                 st.write("Finalizing..")
         else:
             st.error("Please Select atleast one Processing")

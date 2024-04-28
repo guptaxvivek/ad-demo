@@ -118,20 +118,28 @@ def zoom_video(path, factor_percent, video_keywords):
         print(e.stderr)
         return False
 
-def filter_video(input_video, mode, video_keywords):
+def filter_video(input_video, mode, video_keywords, intensity):
     
     if video_keywords:
         video_name, metadata = get_unique_name_and_metadata(video_keywords, f"f_{mode}")    
     else:
         video_name, metadata = get_unique_name_and_metadata(KEYWORDS, f"f_{mode}")
     res_file_name = os.path.join(OUTPUT, video_name)
-    intensity = 40
+    intensity = intensity/100
     if mode == "Sepia":
-        # sepia
+        rr = 0.393 * intensity
+        rg = 0.769 * intensity
+        rb = 0.189 * intensity
+        gr = 0.349 * intensity
+        gg = 0.686 * intensity
+        gb = 0.168 * intensity
+        br = 0.272 * intensity
+        bg = 0.534 * intensity
+        bb = 0.131 * intensity
         command = [
             'ffmpeg',
             '-i', input_video,  # Input video file
-            '-vf', 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131',  # Sepia filter
+            '-vf', f'colorchannelmixer={rr:.3f}:{rg:.3f}:{rb:.3f}:0:{gr:.3f}:{gg:.3f}:{gb:.3f}:0:{br:.3f}:{bg:.3f}:{bb:.3f}',  # Sepia filter
             res_file_name  # Output video file
         ]
     elif mode == "Black-White":
