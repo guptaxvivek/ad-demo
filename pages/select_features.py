@@ -15,9 +15,9 @@ if "is_processed" not in st.session_state:
 
 
 if 'fname' and 'input_folder' in st.session_state:
-    keywords = st.text_input("Enter Keywords (Seperated by ','): ")
-    if keywords:
-        keywords = keywords.split(",")
+    keys = st.text_input("Enter Keywords (Seperated by ','): ")
+    if keys:
+        keywords = keys.split(",")
     
     zoom = st.toggle("Zoom Video")
     if zoom:

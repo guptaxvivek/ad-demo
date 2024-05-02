@@ -52,8 +52,11 @@ def get_unique_name_and_metadata(KEYWORDS, str_effect=""):
     Returns:
         str: Unique name for the video
     """
-
-    video_keywords = random.sample(KEYWORDS, 5)
+    print("KEYS: ", KEYWORDS)
+    if len(KEYWORDS) > 5:
+        video_keywords = random.sample(KEYWORDS, 5)
+    else:
+        video_keywords = KEYWORDS
     unique_hash = random.randint(10000000, 99999999)
     video_keywords_str = "_".join(video_keywords)
     file_name = f"{unique_hash}_{video_keywords_str}_{str_effect}.mp4"
@@ -127,38 +130,38 @@ def filter_video(input_video, mode, video_keywords, intensity):
     res_file_name = os.path.join(OUTPUT, video_name)
     intensity = intensity/100
     if mode == "Sepia":
-        rr = 0.393 * intensity
-        rg = 0.769 * intensity
-        rb = 0.189 * intensity
-        gr = 0.349 * intensity
-        gg = 0.686 * intensity
-        gb = 0.168 * intensity
-        br = 0.272 * intensity
-        bg = 0.534 * intensity
-        bb = 0.131 * intensity
-        command = [
-            'ffmpeg',
-            '-i', input_video,  # Input video file
-            '-vf', f'colorchannelmixer={rr:.3f}:{rg:.3f}:{rb:.3f}:0:{gr:.3f}:{gg:.3f}:{gb:.3f}:0:{br:.3f}:{bg:.3f}:{bb:.3f}',  # Sepia filter
-            res_file_name  # Output video file
-        ]
-    elif mode == "Black-White":
-        # b/w
-        command = [
-            'ffmpeg',
-            '-i', input_video,
-            '-vf', 'hue=s=0',  # Desaturates the color to make it black and white
-            res_file_name
-        ]
-    elif mode == "Invert":
-        # invert
-        command = [
-            'ffmpeg',
-            '-i', input_video,
-            '-vf', 'negate',  # Inverts the colors
-            res_file_name
-        ]
-    subprocess.run(command, check=True)
+        filter_values = [0.393, 0.769, 0.189, 0, 0.349, 0.686, 0.168, 0, 0.272, 0.534, 0.131]
+
+        # Load input videos
+        in1 = ffmpeg.input(input_video)
+        in2 = ffmpeg.input(input_video)  # Second input stream for overlay
+
+
+        # Apply filters
+        in2 = ffmpeg.filter(in2, 'format', 'yuva444p')
+        in2 = ffmpeg.filter(in2, 'colorchannelmixer', *filter_values)
+        in2 = ffmpeg.filter(in2, 'colorchannelmixer', **{'aa':intensity})
+        overlay = ffmpeg.filter([in1, in2], 'overlay')
+        out = ffmpeg.output(overlay, res_file_name, map="0:a")
+        ffmpeg.run(out)
+    else:
+        if mode == "Black-White":
+            # b/w
+            command = [
+                'ffmpeg',
+                '-i', input_video,
+                '-vf', 'hue=s=0',  # Desaturates the color to make it black and white
+                res_file_name
+            ]
+        elif mode == "Invert":
+            # invert
+            command = [
+                'ffmpeg',
+                '-i', input_video,
+                '-vf', 'negate',  # Inverts the colors
+                res_file_name
+            ]
+        subprocess.run(command, check=True)
 
 
 def flip_video(path, video_keywords):
